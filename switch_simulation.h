@@ -10,7 +10,7 @@
 struct Input {
 	QString name;
 	explicit Input(const QString& name_)
-	    : name(name_) {};
+	    : name(name_){};
 
 	bool state   = false; // Current state
 	bool edge    = false; // Edge detected
@@ -66,6 +66,8 @@ class Switch : public QObject {
 	QString getInputs();
 
 	void multiStep();
+
+	bool greenOk() const;
 
       signals:
 	void stateChanged(bool state);

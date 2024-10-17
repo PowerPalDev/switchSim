@@ -111,38 +111,48 @@ bool Switch::determineNextState() {
 			reason = "Timer started";
 			resetPrimary();
 			inputs.timerForced.primary = true;
+			inputs.timerForced.used    = true;
 			return true;
 		}
-		if (inputs.timerForced.primary) {
-			reason = "Timer expired and was used";
+		if (inputs.timerForced.used) {
+			reason                     = "Timer expired and was used";
+			inputs.timerForced.primary = false;
 			return false;
 		}
 		reason = "Timer expired but was NOT used, we leave same state";
 		return state;
 	}
 
-	if (inputs.awayFromHome.state) {
-		if (state && inputs.excessGreen.primary) {
-			reason = "Away from home, user asked to not manage the device, else energy is wasted";
-			return false;
-		}
-	} else {
-		if (!state && inputs.excessGreen.primary) {
-			reason = "User got back home, we still have green energy to send to him";
-			return true;
+	if (inputs.awayFromHome.edge) {
+		if (inputs.awayFromHome.state) {
+			if (state && inputs.excessGreen.primary) {
+				reason = "Away from home, user asked to not manage the device, else energy is wasted";
+				return false;
+			}
+		} else {
+			if (!state && inputs.excessGreen.primary) {
+				reason = "User got back home, we still have green energy to send to him";
+				return true;
+			}
 		}
 	}
 
 	//If we have green energy we have 2 condition, a list of timers and a remote command (that is a special case of timer)
 	//we intentionally do not check edge, as is ok if was emitted before
-	if (inputs.excessGreen.state) {
+	if (greenOk()) {
 		if (inputs.excessGreen.primary) {
 			reason = "We are already using green energy";
 			return state;
 		}
 		if (state) {
-			reason                  = "Green Energy available, but device is already ON";
-			inputs.excessGreen.used = true;
+			reason = "Green Energy available, but device is already ON";
+
+			if (inputs.timerForced.primary) {
+				//we can run green after a timer expires
+			} else {
+				inputs.excessGreen.used = true;
+			}
+
 			return state;
 		}
 		if (inputs.awayFromHome.state) {
@@ -214,4 +224,8 @@ void Switch::multiStep() {
 			return;
 		}
 	}
+}
+
+bool Switch::greenOk() const {
+	return inputs.excessGreen.state && inputs.timerGreen.state;
 }
